@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Email Finder</h1>
+        
+        <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+            <!-- Fetch Websites Section -->
+            <div class="section-card">
+                <h2>Fetch Websites</h2>
+                <form method="POST" id="fetchForm">
+                    <label>Country:</label>
+                    <select name="country" required>
+                        <option value="United States">United States</option>
+                        <option value="Canada">Canada</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Australia">Australia</option>
+                        <option value="India">India</option>
+                    </select>
+                    
+                    <label>State/City keyword:</label>
+                    <input type="text" name="state" placeholder="e.g. California, Mumbai">
+                    
+                    <label>Industry keyword:</label>
+                    <input type="text" name="keyword" required placeholder="e.g. furniture, jewelry">
+                    
+                    <label>Number of websites:</label>
+                    <input type="number" name="count" min="1" max="100" value="10" required>
+                    
+                    <button type="submit" id="fetchBtn">Fetch Websites</button>
+                </form>
+                <div class="button-row">
+                    <button id="showFetchResults" class="button primary">Show Results</button>
+                    <a href="/download/websites" class="button secondary">Download CSV</a>
+                </div>
+            </div>
+
+            <!-- Filter Websites Section -->
+            <div class="section-card">
+                <h2>Filter Websites</h2>
+                <form method="POST" id="filterForm" enctype="multipart/form-data">
+                    <label>Upload Websites CSV:</label>
+                    <input type="file" name="csv_file" accept=".csv" required>
+                    
+                    <label><input type="checkbox" name="filter_active"> Domain Active</label>
+                    <label><input type="checkbox" name="only_shopify"> Only Shopify websites</label>
+                    <label><input type="checkbox" name="filter_fast"> Loads within 5 secs</label>
+                    
+                    <div style="margin-top: 10px; margin-bottom: 10px;">
+                        
+                    </div>
+                    
+                    <button type="submit" id="filterBtn">Apply Filters</button>
+                </form>
+                <div class="button-row">
+                    <button id="showFilterResults" class="button primary">Show Results</button>
+                    <a href="/download/filtered" class="button secondary">Download CSV</a>
+                </div>
+            </div>
+
+            <!-- Fetch Email IDs Section -->
+            <div class="section-card">
+                <h2>Fetch Email IDs</h2>
+                <form method="POST" id="emailForm" enctype="multipart/form-data">
+                    <label>Upload Websites CSV:</label>
+                    <input type="file" name="websites_csv" accept=".csv" required>
+                    
+                    <div class="progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 0%"></div>
+                        </div>
+                        <p class="progress-text">Processing: 0%</p>
+                    </div>
+                    
+                    <button type="submit" id="emailBtn">Fetch Email IDs</button>
+                </form>
+                <div class="button-row">
+                    <button id="showEmailResults" class="button primary">Show Results</button>
+                    <a href="/download/emails" class="button secondary">Download CSV</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="results-section">
+            <h2>Results</h2>
+            <div class="results-tabs">
+                <button class="tab-button" data-tab="fetch-results">Fetched Websites</button>
+                <button class="tab-button" data-tab="filter-results">Filtered Websites</button>
+                <button class="tab-button" data-tab="email-results">Email Processing</button>
+            </div>
+            <div class="results-content">
+                <div id="fetch-results" class="tab-content">
+                    <h3>Fetched Websites</h3>
+                    <div class="websites-list"></div>
+                </div>
+                <div id="filter-results" class="tab-content">
+                    <h3>Filtered Websites</h3>
+                    <div class="websites-list"></div>
+                </div>
+                <div id="email-results" class="tab-content">
+                    <h3>Websites Being Processed</h3>
+                    <div class="websites-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Display Section -->
+        <div class="results-display-section">
+            <h2>Results Display</h2>
+            <div class="results-tabs">
+                <button class="tab-button" data-tab="all-results">All Results</button>
+            </div>
+            <div class="results-content">
+                <div id="all-results" class="tab-content">
+                    <div class="results-category">
+                        <h3>Fetched Websites</h3>
+                        <div class="websites-list" id="all-fetch-results"></div>
+                    </div>
+                    <div class="results-category">
+                        <h3>Filtered Websites</h3>
+                        <div class="websites-list" id="all-filter-results"></div>
+                    </div>
+                    <div class="results-category">
+                        <h3>Email Processing Results</h3>
+                        <div class="websites-list" id="all-email-results"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .section-card {
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .button-row {
+            margin-top: 15px;
+            text-align: center;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            transition: width 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .results-section {
+            margin-top: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .results-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .tab-button.active {
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            max-height: 600px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .websites-list {
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .websites-list a {
+            color: #2196F3;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
+            word-break: break-all;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.2s ease;
+        }
+
+        .websites-list a:hover {
+            background: #f5f5f5;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .results-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .results-section h3 {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .button.primary {
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .button.primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .button.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .button.secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .results-display-section {
+            margin-top: 40px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .results-category {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .results-category h3 {
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 5px;
+        }
+
+        .websites-list {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        .websites-list a {
+            color: #0066cc;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+            word-break: break-all;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        .websites-list a:hover {
+            background: #e9ecef;
+            text-decoration: underline;
+        }
+
+        .results-wrapper {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .results-count {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .result-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+        }
+
+        .result-index {
+            color: #666;
+            font-weight: 600;
+            min-width: 30px;
+            padding-top: 2px;
+        }
+
+        .result-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .result-email {
+            font-size: 14px;
+            color: #666;
+            padding: 5px 0;
+        }
+
+        .result-email strong {
+            color: #333;
+        }
+
+        .result-link {
+            color: #2196F3;
+            text-decoration: none;
+            word-break: break-all;
+            flex: 1;
+        }
+
+        .result-link:hover {
+            color: #1976D2;
+            text-decoration: underline;
+        }
+
+        .no-results {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+
+    <script>
+        // Store the latest results for each type
+        let latestResults = {
+            fetch: [],
+            filter: [],
+            email: []
+        };
+
+        // Country-State validation mapping
+        const countryStateMap = {
+            'United States': [
+                'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+                'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
+                'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
+                'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico',
+                'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania',
+                'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+                'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+            ],
+            'Canada': [
+                'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
+                'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan', 'Northwest Territories',
+                'Nunavut', 'Yukon'
+            ],
+            'United Kingdom': [
+                'England', 'Scotland', 'Wales', 'Northern Ireland', 'London', 'Manchester', 'Birmingham',
+                'Leeds', 'Glasgow', 'Liverpool', 'Newcastle', 'Sheffield', 'Bristol', 'Edinburgh'
+            ],
+            'Australia': [
+                'New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia',
+                'Tasmania', 'Australian Capital Territory', 'Northern Territory', 'Sydney', 'Melbourne',
+                'Brisbane', 'Perth', 'Adelaide', 'Hobart', 'Darwin', 'Canberra'
+            ],
+            'India': [
+                'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+                'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+                'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+                'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+                'Uttarakhand', 'West Bengal', 'Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Kolkata',
+                'Hyderabad', 'Pune', 'Ahmedabad'
+            ]
+        };
+
+        // Function to validate country-state combination
+        function validateCountryState(country, state) {
+            if (!state) return true; // Allow empty state
+            const validStates = countryStateMap[country];
+            if (!validStates) return true; // If country not in map, allow any state
+            
+            // Convert both to lowercase for case-insensitive comparison
+            const stateLower = state.toLowerCase();
+            return validStates.some(validState => 
+                validState.toLowerCase().includes(stateLower) || 
+                stateLower.includes(validState.toLowerCase())
+            );
+        }
+
+        // Function to show error message
+        function showError(message) {
+            alert('Error: ' + message);
+        }
+
+        // Function to display websites in a list
+        function displayWebsites(containerId, websites) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            if (websites.length === 0) {
+                container.innerHTML = '<p class="no-results">No results found</p>';
+                return;
+            }
+
+            // Create a wrapper div for better organization
+            const wrapper = document.createElement('div');
+            wrapper.className = 'results-wrapper';
+
+            // Add count of results
+            const countDiv = document.createElement('div');
+            countDiv.className = 'results-count';
+            countDiv.textContent = `Found ${websites.length} result${websites.length === 1 ? '' : 's'}`;
+            wrapper.appendChild(countDiv);
+
+            // Create a list container
+            const listContainer = document.createElement('div');
+            listContainer.className = 'results-list';
+
+            // Check if this is an email results container
+            const isEmailResults = containerId.includes('email-results');
+
+            websites.forEach((website, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'result-item';
+
+                // Add index number
+                const indexSpan = document.createElement('span');
+                indexSpan.className = 'result-index';
+                indexSpan.textContent = `${index + 1}.`;
+                itemDiv.appendChild(indexSpan);
+
+                // Create content container
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'result-content';
+
+                // Add website link
+                const link = document.createElement('a');
+                link.href = website.website || website; // Handle both object and string formats
+                link.target = '_blank';
+                link.textContent = website.website || website;
+                link.className = 'result-link';
+                contentDiv.appendChild(link);
+
+                // If this is an email result, add the email address
+                if (isEmailResults && website.email) {
+                    const emailDiv = document.createElement('div');
+                    emailDiv.className = 'result-email';
+                    emailDiv.innerHTML = `<strong>Email:</strong> ${website.email}`;
+                    contentDiv.appendChild(emailDiv);
+                }
+
+                itemDiv.appendChild(contentDiv);
+                listContainer.appendChild(itemDiv);
+            });
+
+            wrapper.appendChild(listContainer);
+            container.appendChild(wrapper);
+        }
+
+        // Function to update all results display
+        function updateAllResults() {
+            displayWebsites('all-fetch-results', latestResults.fetch);
+            displayWebsites('all-filter-results', latestResults.filter);
+            displayWebsites('all-email-results', latestResults.email);
+        }
+
+        // Function to show results in a specific tab
+        function showResultsInTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show the selected tab content
+            document.getElementById(tabId).classList.add('active');
+            
+            // Add active class to the clicked tab button
+            document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Scroll to the results section
+            document.querySelector('.results-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize the first tab as active
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstTab = document.querySelector('.tab-button');
+            if (firstTab) {
+                showResultsInTab(firstTab.getAttribute('data-tab'));
+            }
+        });
+
+        // Show Results button click handlers
+        document.getElementById('showFetchResults').addEventListener('click', () => {
+            if (latestResults.fetch.length > 0) {
+                displayWebsites('fetch-results', latestResults.fetch);
+                showResultsInTab('fetch-results');
+            } else {
+                showError('No websites have been fetched yet');
+            }
+        });
+
+        document.getElementById('showFilterResults').addEventListener('click', () => {
+            if (latestResults.filter.length > 0) {
+                displayWebsites('filter-results', latestResults.filter);
+                showResultsInTab('filter-results');
+            } else {
+                showError('No websites have been filtered yet');
+            }
+        });
+
+        document.getElementById('showEmailResults').addEventListener('click', () => {
+            if (latestResults.email.length > 0) {
+                displayWebsites('email-results', latestResults.email);
+                showResultsInTab('email-results');
+            } else {
+                showError('No websites are being processed yet');
+            }
+        });
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                showResultsInTab(tabId);
+            });
+        });
+
+        // Fetch Websites Form
+        document.getElementById('fetchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const country = form.querySelector('select[name="country"]').value;
+            const state = form.querySelector('input[name="state"]').value;
+
+            if (!validateCountryState(country, state)) {
+                showError(`Invalid state/city "${state}" for country "${country}". Please enter a valid location.`);
+                return;
+            }
+
+            const formData = new FormData(form);
+            const button = form.querySelector('button');
+            button.disabled = true;
+            button.textContent = 'Fetching...';
+
+            fetch('/fetch_websites', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.websites) {
+                    latestResults.fetch = data.websites;
+                    updateAllResults();
+                } else {
+                    showError(data.error || 'Failed to fetch websites');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to fetch websites');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Fetch Websites';
+            });
+        });
+
+        // Filter Form
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const formData = new FormData(form);
+            const button = form.querySelector('button');
+            button.disabled = true;
+            button.textContent = 'Filtering...';
+
+            fetch('/filter', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.websites) {
+                    latestResults.filter = data.websites;
+                    updateAllResults();
+                } else {
+                    showError(data.error || 'Failed to filter websites');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to filter websites');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = 'Apply Filters';
+            });
+        });
+
+        // Email Form
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const progressContainer = form.querySelector('.progress-container');
+            const progressBar = form.querySelector('.progress');
+            const progressText = form.querySelector('.progress-text');
+            const button = form.querySelector('button');
+            
+            progressContainer.style.display = 'block';
+            button.disabled = true;
+            button.textContent = 'Processing...';
+            
+            const formData = new FormData(form);
+
+            fetch('/fetch_emails', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.websites) {
+                    latestResults.email = data.websites;
+                    updateAllResults();
+                    // Start polling progress
+                    pollProgress();
+                } else {
+                    showError(data.error || 'Failed to process emails');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to process emails');
+                button.disabled = false;
+                button.textContent = 'Fetch Email IDs';
+            });
+
+            function pollProgress() {
+                fetch('/fetch_progress')
+                    .then(response => response.json())
+                    .then(data => {
+                        progressBar.style.width = data.progress + '%';
+                        progressText.textContent = 'Processing: ' + data.progress + '%';
+                        if (data.status === 'completed') {
+                            button.disabled = false;
+                            button.textContent = 'Fetch Email IDs';
+                        } else {
+                            setTimeout(pollProgress, 500);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        button.disabled = false;
+                        button.textContent = 'Fetch Email IDs';
+                    });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraping Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Scraping Results</h1>
+        <div class="results-info">
+            <p>Found {{ results|length }} websites for <strong>{{ query }}</strong>. Results saved to 'results.csv'</p>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr class="{{ 'active' if result.status == 'Active' else 'inactive' }}">
+                        <td><a href="{{ result.domain }}" target="_blank">{{ result.domain }}</a></td>
+                        <td>{{ result.email }}</td>
+                        <td>
+                            <span class="status-badge {{ result.status.lower() }}">
+                                {{ result.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="button-group">
+            <a href="/" class="button">New Search</a>
+            <a href="/download" class="button secondary">Download CSV</a>
+        </div>
+    </div>
+</body>
+</html>
